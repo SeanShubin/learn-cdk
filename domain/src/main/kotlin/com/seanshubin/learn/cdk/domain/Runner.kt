@@ -28,11 +28,6 @@ import software.amazon.awscdk.services.secretsmanager.SecretStringGenerator
 import software.constructs.Construct
 
 class Runner : Runnable {
-    object Constants {
-        const val account = "964638509728" //seanshubin:sean
-        const val regionName = "us-west-1"
-    }
-
     object Names {
         private const val prefix = "LearnCdk"
         const val stackId = "${prefix}StackId"
@@ -67,12 +62,7 @@ class Runner : Runnable {
 
     override fun run() {
         val app = App()
-        val environment = Environment.builder()
-            .account(Constants.account)
-            .region(Constants.regionName)
-            .build()
-        val stackProps = StackProps.builder()
-            .env(environment).build()
+        val stackProps = StackProps.builder().build()
         val scope = Stack(app, Names.stackId, stackProps)
         createStack(scope)
         app.synth()
@@ -261,6 +251,7 @@ class Runner : Runnable {
         val installJava = InitPackage.yum("java-17-amazon-corretto")
         val installMysql = InitCommand.argvCommand(listOf("yum", "install", "-y", "mysql"))
         val copyJavaArchiveForServer = InitSource.fromS3Object("/home/ec2-user", bucket, "backend.zip")
+//        val copyEchoServerApp = InitSource.fromS3Object("/home/ec2-user", bucket, "echo.zip")
         val copySystemdEntry = InitSource.fromS3Object("/etc/systemd/system", bucket, "systemd.zip")
         val launchServer = InitCommand.argvCommand(listOf("systemctl", "start", "condorcet-backend"))
         val lines = listOf(
@@ -276,6 +267,7 @@ class Runner : Runnable {
             installJava,
             installMysql,
             copyJavaArchiveForServer,
+//            copyEchoServerApp,
             copySystemdEntry,
             initializeContent,
             initializeExec,

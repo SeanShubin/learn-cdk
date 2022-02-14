@@ -120,24 +120,24 @@ creating new training material is not as time sensitive that have a more immedia
 
 ## Manual frontend setup
 - Check backend
-  - http://54.177.109.107:8080/Health
+  - http://54.183.181.203:8080/Health
 - Check api gateway
-  - https://4jpigzu55b.execute-api.us-west-1.amazonaws.com/proxy/Health
+  - https://d6iis818t8.execute-api.us-west-1.amazonaws.com/proxy/Health
 - Check cloudfront distribution
-  - https://d1pxsu81x74urf.cloudfront.net/index.html
+  - https://d1oxk1k5ecqui.cloudfront.net/index.html
 - Cloudfront
   - Create Origin
     - origin domain
-      - 4jpigzu55b.execute-api.us-west-1.amazonaws.com
+      - d6iis818t8.execute-api.us-west-1.amazonaws.com
   - Create Behavior
     - path pattern
       - /proxy/*
     - origin
-      - 4jpigzu55b.execute-api.us-west-1.amazonaws.com
+      - d6iis818t8.execute-api.us-west-1.amazonaws.com
   - General
     - custom ssl certificate
 - Check proxy
-  - https://d1pxsu81x74urf.cloudfront.net/proxy/Health
+  - https://d1oxk1k5ecqui.cloudfront.net/proxy/Health
 - Route53
   - Create Record
   - A
@@ -152,3 +152,19 @@ creating new training material is not as time sensitive that have a more immedia
       - https://d1jb0whapyks6i.cloudfront.net/proxy/Health
   - Frontend
     - https://pairwisevote.com/index.html
+
+
+## Debug Cookies
+
+```json
+{
+  "nameOrEmail" : "Alice",
+  "password" : "pass"
+}
+```
+
+https://d6iis818t8.execute-api.us-west-1.amazonaws.com/proxy/Authenticate
+- set-cookie
+- Refresh=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VyTmFtZSI6IkFsaWNlIn0.AA-Tm8FHKr8AYe3iYNrpm38KVMQ2ZzKJ8umNu2ZMervifs55tnbGdz8Z2QqptZblExB3BW3aBTIso4qVeGnYn3BierGzbJH8Yk5RhqYfojai7KDH-gPRKV6z4I5qFHjUq5LrVZjb1R8CqgLNgo33uQ4ncdJMcNOPSV2Af0n9JM4; HttpOnly
+
+https://d1oxk1k5ecqui.cloudfront.net/proxy/Authenticate
