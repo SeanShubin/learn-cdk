@@ -1,0 +1,15 @@
+**/.idea
+**/out
+**/*.iml
+**/*.ipr
+**/*.iws
+**/target
+cdk.out
+generated
+secrets
+local-config
+*~
+*#
+.#*
+.DS_Store
+dependency-reduced-pom.xml

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>learn-cdk-domain</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>com.seanshubin.learn.cdk</groupId>
+            <artifactId>learn-cdk-json</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>aws-cdk-lib</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.constructs</groupId>
+            <artifactId>constructs</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.arrow-kt</groupId>
+            <artifactId>arrow-core-jvm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>apigatewayv2-alpha</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>apigatewayv2-integrations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>software.amazon.awscdk</groupId>
+            <artifactId>apigatewayv2-integrations-alpha</artifactId>
+        </dependency>
+    </dependencies>
+    <parent>
+        <groupId>com.seanshubin.learn.cdk</groupId>
+        <artifactId>learn-cdk-parent</artifactId>
+        <version>0.1.0</version>
+    </parent>
+    <name>${project.groupId}:${project.artifactId}</name>
+</project>

@@ -1,0 +1,11 @@
+[Unit]
+Description=Condorcet Backend
+StartLimitIntervalSec=0
+
+[Service]
+WorkingDirectory=/home/ec2-user
+Type=simple
+Restart=always
+RestartSec=1
+User=ec2-user
+ExecStart=/usr/bin/env java -jar /home/ec2-user/condorcet-backend-console.jar

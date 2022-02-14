@@ -1,0 +1,84 @@
+{
+  prefix [com seanshubin]
+  name [learn cdk]
+  description 'Learn CDK'
+  version 0.1.0
+  language kotlin
+  developer {
+    name 'Sean Shubin'
+    githubName SeanShubin
+    mavenUserName SeanShubin
+    organization 'Sean Shubin'
+    url http://seanshubin.com/
+  }
+  dependencies {
+    stdlib {
+      group    org.jetbrains.kotlin
+      artifact kotlin-stdlib-jdk8
+    }
+    test {
+      group    org.jetbrains.kotlin
+      artifact kotlin-test-junit
+      scope    test
+    }
+    jackson {
+      group    com.fasterxml.jackson.module
+      artifact jackson-module-kotlin
+    }
+    jackson-time {
+      group    com.fasterxml.jackson.datatype
+      artifact jackson-datatype-jsr310
+    }
+    coroutines {
+      group    org.jetbrains.kotlinx
+      artifact kotlinx-coroutines-core
+    }
+    arrow {
+      group    io.arrow-kt
+      artifact arrow-core-jvm
+    }
+    aws-cdk-lib {
+      group    software.amazon.awscdk
+      artifact aws-cdk-lib
+    }
+    api-gateway-alpha {
+      group    software.amazon.awscdk
+      artifact apigatewayv2-alpha
+      lockedAtVersion 2.12.0-alpha.0
+    }
+    api-gateway-integrations {
+      group    software.amazon.awscdk
+      artifact apigatewayv2-integrations
+    }
+    api-gateway-integrations-alpha {
+      group    software.amazon.awscdk
+      artifact apigatewayv2-integrations-alpha
+      lockedAtVersion 2.10.0-alpha.0
+    }
+    constructs {
+      group    software.constructs
+      artifact constructs
+    }
+  }
+  global [ stdlib test ]
+  modules {
+    console       [ domain ]
+    contract      []
+    domain        [
+     aws-cdk-lib
+     constructs
+     json
+     arrow
+     api-gateway-alpha
+     api-gateway-integrations
+     api-gateway-integrations-alpha
+    ]
+    json          [ jackson jackson-time contract ]
+  }
+  detangler [console]
+  consoleEntryPoint {
+    console com.seanshubin.learn.cdk.console.EntryPoint
+  }
+  javaVersion 17
+  deployableToMavenCentral false
+}

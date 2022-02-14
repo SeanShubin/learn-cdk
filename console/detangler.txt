@@ -1,0 +1,36 @@
+{
+  reportDir console/target/detangled
+  searchPaths
+  [
+    ./console/target/learn-cdk-console.jar
+  ]
+  level 2
+  startsWith
+  {
+    include
+    [
+      [
+        com
+        seanshubin
+        learn
+        cdk
+      ]
+    ]
+    exclude []
+    drop
+    [
+      [
+        com
+        seanshubin
+        learn
+        cdk
+      ]
+    ]
+  }
+  ignoreFiles []
+  canFailBuild true
+  ignoreJavadoc true
+  logTiming true
+  logEffectiveConfiguration true
+  allowedInCycle console/detangler-allowed-in-cycle.txt
+}
