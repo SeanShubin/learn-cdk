@@ -58,82 +58,33 @@ source /etc/profile.d/maven.sh
 - https://bobbyhadz.com/blog/aws-cdk-rds-example
 - https://medium.com/@benmorel/creating-a-linux-service-with-systemd-611b5c8b91d6
 
-## CDK Questions
-- How do I navigate from a particular ec2 instance type string (for example "t1.micro") in the management console, to the corresponding InstanceClass and InstanceSize in the CDK? 
-  - Here is specifically where I am looking
-    - from
-      - https://us-west-1.console.aws.amazon.com/ec2/v2/home?region=us-west-1#InstanceTypes:
-      - Amazon Management Console
-      - EC2
-      - Instance Types
-      - Instance Type
-    - to
-      - https://repo.maven.apache.org/maven2/software/amazon/awscdk/aws-cdk-lib/2.9.0/aws-cdk-lib-2.9.0.jar
-      - Maven Central
-      - group software.amazon.awscdk
-      - artifact aws-cdk-lib
-      - package software.amazon.awscdk.services.ec2
-      - classes InstanceClass and InstanceSize
-- Is S3 and CloudFormationInit the right way to get files on to ec2 instances?
-  - The InitSource.fromS3Object and Source.asset methods are pretty aggressive about zipping and unziping things without me telling them to
-- I saw an example where someone installed a database server on ec2 in order to access RDS, is that right?
-- Oddity installing mysql
-  - this works
-    - InitCommand.argvCommand(listOf("yum","install","-y","mysql"))
-  - this does not work
-    - InitPackage.yum("mysql")
-
-## How to deal with secrets
-I am trying to use CDK spin up a Java application on an EC2 instance that talks to RDS.
-My initial strategy was to have CDK generate a secret and make both EC2 and RDS aware of that secret,
-but after reading up on the CfnOutput, StringParameter, SecretStringGenerator, Credentials classes,
-and noticing certain steps omitted from the documentation,
-I am starting to think I am trying to solve the problem in a way that is not supported.
-The things causing me trouble is the randomized letters appended to the secret name in a CDK stack,
-and my apparent inability to get those names pushed to the EC2 instance by CfnOutput or StringParameter,
-these seem to be for some other purpose.
-My suspicion now is that the way to go is to generate the secrets in secrets manager manually,
-then build knowledge of those secret names into my cdk stack.
-Does this seem like I am on the right track?
-Or is there some documentation I missed that I should be looking into?
-
-I am creating an example of how to adapt a non-aws web application to run in an aws stack.
-This is for training during onboarding, where the primary concern is introducing foundational concepts upon which real world problems can be solved.
-
-The structure of my app so far:
-  val vpc = createVpc(scope)
-  val securityGroup = createSecurityGroup(scope, vpc)
-  val databasePassword = createDatabasePassword(scope)
-  val database = createDatabase(scope, vpc, securityGroup, databasePassword)
-  val filesForEc2 = createFilesForEc2Bucket(scope)
-  val ec2 = createEc2Instance(scope, vpc, securityGroup, filesForEc2, database, databasePassword)
-  val websiteBucket = createWebsiteBucket(scope, ec2)
-
-My current guess as to how to connect S3 to EC2, progressing through trial and error
-  val isProxy = RoutingRuleCondition.builder().keyPrefixEquals("proxy/").build()
-  val hostName = ec2.instance.attrPublicDnsName
-  val websiteRoutingRule = RoutingRule.builder().condition(isProxy).hostName(hostName).build()
-
-I am mainly keeping this scoped to office hours for now,
-as although this work is important,
-creating new training material is not as time sensitive that have a more immediate and noticeable effect on our end-user. 
-
 ## Manual frontend setup
 - Check backend
-  - http://54.183.181.203:8080/Health
+  - http://54.177.175.143:8080/Health
 - Check api gateway
-  - https://d6iis818t8.execute-api.us-west-1.amazonaws.com/proxy/Health
+  - https://79eu103md6.execute-api.us-west-1.amazonaws.com/proxy/Health
 - Check cloudfront distribution
-  - https://d1oxk1k5ecqui.cloudfront.net/index.html
+  - https://d2xk5xz1t47n0z.cloudfront.net
 - Cloudfront
   - Create Origin
     - origin domain
-      - d6iis818t8.execute-api.us-west-1.amazonaws.com
+      - 79eu103md6.execute-api.us-west-1.amazonaws.com
+    - HTTPS only
   - Create Behavior
     - path pattern
       - /proxy/*
     - origin
-      - d6iis818t8.execute-api.us-west-1.amazonaws.com
+      - 79eu103md6.execute-api.us-west-1.amazonaws.com
+    - Viewer Protocol Policy
+      - HTTPS only
+    - Allowed HTTP methods
+      - GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE
+    - Create origin request policy
+      - AllCookies
+    - Origin Request Policy
+      - AllCookies
+  - Error Pages
+    - 403 -> /index.html
   - General
     - custom ssl certificate
 - Check proxy
@@ -152,19 +103,3 @@ creating new training material is not as time sensitive that have a more immedia
       - https://d1jb0whapyks6i.cloudfront.net/proxy/Health
   - Frontend
     - https://pairwisevote.com/index.html
-
-
-## Debug Cookies
-
-```json
-{
-  "nameOrEmail" : "Alice",
-  "password" : "pass"
-}
-```
-
-https://d6iis818t8.execute-api.us-west-1.amazonaws.com/proxy/Authenticate
-- set-cookie
-- Refresh=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VyTmFtZSI6IkFsaWNlIn0.AA-Tm8FHKr8AYe3iYNrpm38KVMQ2ZzKJ8umNu2ZMervifs55tnbGdz8Z2QqptZblExB3BW3aBTIso4qVeGnYn3BierGzbJH8Yk5RhqYfojai7KDH-gPRKV6z4I5qFHjUq5LrVZjb1R8CqgLNgo33uQ4ncdJMcNOPSV2Af0n9JM4; HttpOnly
-
-https://d1oxk1k5ecqui.cloudfront.net/proxy/Authenticate

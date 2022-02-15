@@ -3,7 +3,7 @@
   - region us-west-1
 - cj
   - CJ Engineering Tooling Developers  (837465188358)
-- to switch environments
-  - export AWS_PROFILE=user1
 - to list credentials
   - cat ~/.aws/credentials
+- to switch credentials
+  - export AWS_PROFILE=sean-personal

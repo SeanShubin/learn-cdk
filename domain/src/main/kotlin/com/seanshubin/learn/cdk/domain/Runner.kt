@@ -45,7 +45,6 @@ class Runner : Runnable {
         const val privateSubnetName = "${prefix}PrivateSubnetName"
         const val roleName = "${prefix}RoleName"
         const val keyName = "${prefix}KeyName"
-        const val cloudfrontName = "${prefix}CloudfrontName"
         const val apiName = "${prefix}ApiName"
         const val urlIntegration = "${prefix}IntegrationName"
         const val distributionName = "${prefix}DistributionName"
@@ -111,6 +110,7 @@ class Runner : Runnable {
         )
         val distribution = Distribution.Builder.create(scope, Names.distributionName)
             .defaultBehavior(staticSiteBehavior)
+            .defaultRootObject("index.html")
 //            .additionalBehaviors(additionalBehaviors)
             .build()
         return distribution
