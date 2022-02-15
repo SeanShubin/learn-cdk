@@ -22,16 +22,9 @@ pushd generated/systemd
 zip -r ../systemd.zip .
 popd
 
-mkdir -p generated/echo
-cp ../echo-server/console/target/echo-server-console.jar generated/echo/
-pushd generated/echo
-zip -r ../echo.zip .
-popd
-
 mkdir -p generated/s3/ec2
 cp generated/backend.zip generated/s3/ec2
 cp generated/systemd.zip generated/s3/ec2
-cp generated/echo.zip generated/s3/ec2
 
 mkdir -p generated/s3/website
 cp -r generated/frontend/ generated/s3/website

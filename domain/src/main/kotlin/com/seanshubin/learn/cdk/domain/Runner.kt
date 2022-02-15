@@ -6,9 +6,7 @@ import software.amazon.awscdk.services.apigatewayv2.alpha.HttpApi
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod
 import software.amazon.awscdk.services.apigatewayv2.alpha.IApi
 import software.amazon.awscdk.services.apigatewayv2.integrations.alpha.HttpUrlIntegration
-import software.amazon.awscdk.services.cloudfront.AllowedMethods
-import software.amazon.awscdk.services.cloudfront.BehaviorOptions
-import software.amazon.awscdk.services.cloudfront.Distribution
+import software.amazon.awscdk.services.cloudfront.*
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin
 import software.amazon.awscdk.services.cloudfront.origins.S3Origin
 import software.amazon.awscdk.services.ec2.*
@@ -79,39 +77,15 @@ class Runner : Runnable {
         val cloudFrontDistribution = createCloudfrontDistribution(scope, bucketWithFilesForWebsite, apiGateway)
     }
 
-    private fun createRoute53(scope: Construct) {
-        val query = HostedZoneProviderProps.builder().domainName(Names.domainName).build()
-        val zone = HostedZone.fromLookup(scope, Names.hostedZoneName, query)
-//        val aliasTarget = ApiGatewayDomain
-//        val recordTarget = RecordTarget.fromAlias(aliasTarget)
-//        val aliasRecord = ARecord.Builder.create(scope, "").target(recordTarget)
-    }
-
-    private fun String.removePrefix(prefix:String):String {
-        if(startsWith(prefix)){
-            return substring(prefix.length)
-        } else {
-            throw RuntimeException("Target '$this' did not start with prefix '$prefix'")
-        }
-    }
-
     private fun createCloudfrontDistribution(scope: Construct, staticSiteBucket: Bucket, api: IApi): Distribution {
         val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
         val staticSiteBehavior = BehaviorOptions.builder()
             .allowedMethods(AllowedMethods.ALLOW_ALL)
             .origin(staticSiteOrigin)
             .build()
-        val apiOrigin = HttpOrigin.Builder.create(api.apiEndpoint).build()
-        val apiBehavior = BehaviorOptions.builder()
-            .origin(apiOrigin)
-            .build()
-        val additionalBehaviors = mapOf<String, BehaviorOptions>(
-            "/proxy/*" to apiBehavior
-        )
         val distribution = Distribution.Builder.create(scope, Names.distributionName)
             .defaultBehavior(staticSiteBehavior)
             .defaultRootObject("index.html")
-//            .additionalBehaviors(additionalBehaviors)
             .build()
         return distribution
     }
@@ -251,7 +225,6 @@ class Runner : Runnable {
         val installJava = InitPackage.yum("java-17-amazon-corretto")
         val installMysql = InitCommand.argvCommand(listOf("yum", "install", "-y", "mysql"))
         val copyJavaArchiveForServer = InitSource.fromS3Object("/home/ec2-user", bucket, "backend.zip")
-//        val copyEchoServerApp = InitSource.fromS3Object("/home/ec2-user", bucket, "echo.zip")
         val copySystemdEntry = InitSource.fromS3Object("/etc/systemd/system", bucket, "systemd.zip")
         val launchServer = InitCommand.argvCommand(listOf("systemctl", "start", "condorcet-backend"))
         val lines = listOf(
@@ -267,7 +240,6 @@ class Runner : Runnable {
             installJava,
             installMysql,
             copyJavaArchiveForServer,
-//            copyEchoServerApp,
             copySystemdEntry,
             initializeContent,
             initializeExec,
