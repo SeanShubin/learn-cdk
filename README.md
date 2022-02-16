@@ -60,21 +60,21 @@ source /etc/profile.d/maven.sh
 
 ## Manual frontend setup
 - Check backend
-  - http://54.177.175.143:8080/Health
+  - http://54.215.119.155:8080/Health
 - Check api gateway
-  - https://79eu103md6.execute-api.us-west-1.amazonaws.com/proxy/Health
+  - https://g0hi31us61.execute-api.us-west-1.amazonaws.com/proxy/Health
 - Check cloudfront distribution
-  - https://d2xk5xz1t47n0z.cloudfront.net
+  - https://d1nkc8b9v0wbof.cloudfront.net
 - Cloudfront
   - Create Origin
     - origin domain
-      - 79eu103md6.execute-api.us-west-1.amazonaws.com
+      - g0hi31us61.execute-api.us-west-1.amazonaws.com
     - HTTPS only
   - Create Behavior
     - path pattern
       - /proxy/*
     - origin
-      - 79eu103md6.execute-api.us-west-1.amazonaws.com
+      - isi6u71w51.execute-api.us-west-1.amazonaws.com
     - Viewer Protocol Policy
       - HTTPS only
     - Allowed HTTP methods
@@ -103,3 +103,10 @@ source /etc/profile.d/maven.sh
       - https://d1jb0whapyks6i.cloudfront.net/proxy/Health
   - Frontend
     - https://pairwisevote.com/index.html
+
+
+## Todo
+- load balancer
+- autoscaling group
+- vote.onboarding.cjpowered.com
+- vote.cj.com

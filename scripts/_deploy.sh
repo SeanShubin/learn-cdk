@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-cdk deploy --require-approval never
+cdk deploy --require-approval never LearnCdkAppStackId
