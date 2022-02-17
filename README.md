@@ -60,11 +60,11 @@ source /etc/profile.d/maven.sh
 
 ## Manual frontend setup
 - Check backend
-  - http://54.215.119.155:8080/Health
+  - http://54.193.254.252:8080/Health
 - Check api gateway
-  - https://g0hi31us61.execute-api.us-west-1.amazonaws.com/proxy/Health
+  - https://pop9lkgzfi.execute-api.us-west-1.amazonaws.com/proxy/Health
 - Check cloudfront distribution
-  - https://d1nkc8b9v0wbof.cloudfront.net
+  - https://d5rpcdxkxxum4.cloudfront.net
 - Cloudfront
   - Create Origin
     - origin domain
@@ -110,3 +110,66 @@ source /etc/profile.d/maven.sh
 - autoscaling group
 - vote.onboarding.cjpowered.com
 - vote.cj.com
+
+
+
+I see how to create the HttpOrigin, but not how to add it to the distribution like it was done in the AWS Management Console.   If you look at this example code (Kotlin using the Java API), you can see me creating the HttpOrigin just fine, but there does not appear to be a method on Distribution that allows an additional origin to be added.
+
+import software.amazon.awscdk.services.apigatewayv2.alpha.IApi
+import software.amazon.awscdk.services.s3.Bucket
+import software.amazon.awscdk.services.cloudfront.Distribution
+
+      private fun createCloudfrontDistribution(
+            staticSiteBucket: Bucket,
+            api: IApi
+        ): Distribution {
+            val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
+            val staticSiteBehavior = BehaviorOptions.builder()
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .origin(staticSiteOrigin)
+                .build()
+            val httpOrigin = HttpOrigin.Builder.create(api.apiEndpoint).build()
+            val distribution = Distribution.Builder.create(this, Names.distributionName)
+                .defaultBehavior(staticSiteBehavior)
+                .defaultRootObject("index.html")
+                .build()
+            return distribution
+        }
+
+This was done in cloudfront like this:
+- Cloudfront
+- Distributions
+- Origins
+- Create Origin
+- Origin Domain
+  - yggj9m1nhh.execute-api.us-west-1.amazonaws.com
+- HTTPS only
+- Create Origin
+
+so I was expecting something like Distribution.addOrigin or Distribution.createOrigin
+
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>aws-cdk-lib</artifactId>
+                <version>2.12.0</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>apigatewayv2-alpha</artifactId>
+                <version>2.12.0-alpha.0</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>apigatewayv2-integrations</artifactId>
+                <version>1.144.0</version>
+            </dependency>
+            <dependency>
+                <groupId>software.amazon.awscdk</groupId>
+                <artifactId>apigatewayv2-integrations-alpha</artifactId>
+                <version>2.10.0-alpha.0</version>
+            </dependency>
+            <dependency>
+                <groupId>software.constructs</groupId>
+                <artifactId>constructs</artifactId>
+                <version>10.0.62</version>
+            </dependency>

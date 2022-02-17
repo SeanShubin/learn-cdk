@@ -8,6 +8,7 @@ import software.amazon.awscdk.services.apigatewayv2.alpha.IApi
 import software.amazon.awscdk.services.apigatewayv2.integrations.alpha.HttpUrlIntegration
 import software.amazon.awscdk.services.cloudfront.*
 import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin
+import software.amazon.awscdk.services.cloudfront.origins.OriginGroup
 import software.amazon.awscdk.services.cloudfront.origins.S3Origin
 import software.amazon.awscdk.services.ec2.*
 import software.amazon.awscdk.services.iam.ManagedPolicy
@@ -16,8 +17,6 @@ import software.amazon.awscdk.services.iam.ServicePrincipal
 import software.amazon.awscdk.services.rds.Credentials
 import software.amazon.awscdk.services.rds.DatabaseInstance
 import software.amazon.awscdk.services.rds.DatabaseInstanceEngine
-import software.amazon.awscdk.services.route53.HostedZone
-import software.amazon.awscdk.services.route53.HostedZoneProviderProps
 import software.amazon.awscdk.services.s3.Bucket
 import software.amazon.awscdk.services.s3.deployment.BucketDeployment
 import software.amazon.awscdk.services.s3.deployment.Source
@@ -28,36 +27,30 @@ import software.constructs.Construct
 class Runner : Runnable {
     object Names {
         private const val prefix = "LearnCdk"
-        const val vpcStackId = "${prefix}VpcStackId"
-        const val databaseStackId = "${prefix}DatabaseStackId"
-        const val appStackId = "${prefix}AppStackId"
-        const val vpcId = "${prefix}VpcId"
-        const val securityGroupId = "${prefix}SecurityGroupId"
+        const val vpcStackId = "${prefix}VpcStack"
+        const val databaseStackId = "${prefix}DatabaseStack"
+        const val appStackId = "${prefix}AppStack"
+        const val cloudFrontStackId = "${prefix}CloudFrontStack"
+        const val vpcId = "${prefix}Vpc"
+        const val securityGroupId = "${prefix}SecurityGroup"
         const val ec2InstanceId = "${prefix}Ec2Id"
-        const val ec2InstanceName = "${prefix}Ec2InstanceName"
-        const val databaseInstanceId = "${prefix}DatabaseInstanceId"
+        const val ec2InstanceName = "${prefix}Ec2Name"
+        const val databaseInstanceId = "${prefix}DatabaseId"
         const val databaseName = "${prefix}DatabaseName"
-        const val s3BucketNameForEc2Files = "${prefix}BucketEc2Name"
-        const val s3BucketNameForWebsite = "${prefix}BucketWebsiteName"
-        const val s3BucketDeploymentNameForEc2Files = "${prefix}BucketDeployForEc2FilesName"
-        const val s3BucketDeploymentNameForWebsite = "${prefix}BucketDeployForWebsiteName"
-        const val publicSubnetName = "${prefix}PublicSubnetName"
-        const val privateSubnetName = "${prefix}PrivateSubnetName"
-        const val roleName = "${prefix}RoleName"
-        const val keyName = "${prefix}KeyName"
-        const val apiName = "${prefix}ApiName"
-        const val urlIntegration = "${prefix}IntegrationName"
-        const val distributionName = "${prefix}DistributionName"
-        const val hostedZoneName = "${prefix}HostedZoneName"
+        const val s3BucketNameForEc2Files = "${prefix}Ec2Bucket"
+        const val s3BucketNameForWebsite = "${prefix}WebsiteBucket"
+        const val s3BucketDeploymentNameForEc2Files = "${prefix}Ec2BucketDeploy"
+        const val s3BucketDeploymentNameForWebsite = "${prefix}WebsiteBucketDeploy"
+        const val publicSubnetName = "${prefix}PublicSubnet"
+        const val privateSubnetName = "${prefix}PrivateSubnet"
+        const val roleName = "${prefix}Role"
+        const val keyName = "${prefix}Key"
+        const val apiName = "${prefix}Api"
+        const val urlIntegration = "${prefix}UrlIntegration"
+        const val distributionName = "${prefix}Distribution"
+        const val hostedZoneName = "${prefix}HostedZone"
         const val domainName = "pairwisevote.com"
     }
-
-    val privateSubnets = SubnetSelection.builder()
-        .subnetType(SubnetType.PRIVATE_ISOLATED)
-        .build()
-    val publicSubnets = SubnetSelection.builder()
-        .subnetType(SubnetType.PUBLIC)
-        .build()
 
     class VpcStack(scope: Construct) : Stack(scope, Names.vpcStackId) {
         val vpc: Vpc = createVpc()
@@ -129,17 +122,15 @@ class Runner : Runnable {
 
     class DatabaseStack(
         scope: Construct,
-        subnetSelection: SubnetSelection,
         vpc: Vpc,
         securityGroup: SecurityGroup,
         databasePassword: Secret
     ) : Stack(scope, Names.databaseStackId) {
-        val database: DatabaseInstance = createDatabase(vpc, securityGroup, databasePassword, subnetSelection)
+        val database: DatabaseInstance = createDatabase(vpc, securityGroup, databasePassword)
         private fun createDatabase(
             vpc: Vpc,
             securityGroup: SecurityGroup,
-            databasePassword: Secret,
-            subnetSelection: SubnetSelection
+            databasePassword: Secret
         ): DatabaseInstance {
             val securityGroups = listOf(securityGroup)
             val databaseInstanceType = InstanceType.of(
@@ -147,6 +138,9 @@ class Runner : Runnable {
                 InstanceSize.MICRO
             )
             val credentials = Credentials.fromPassword("root", databasePassword.secretValue)
+            val privateSubnets = SubnetSelection.builder()
+                .subnetType(SubnetType.PRIVATE_ISOLATED)
+                .build()
             val database = DatabaseInstance.Builder.create(this, Names.databaseInstanceId)
                 .databaseName(Names.databaseName)
                 .publiclyAccessible(true)
@@ -154,7 +148,7 @@ class Runner : Runnable {
                 .credentials(Credentials.fromGeneratedSecret("root"))
                 .vpc(vpc)
                 .instanceType(databaseInstanceType)
-                .vpcSubnets(subnetSelection)
+                .vpcSubnets(privateSubnets)
                 .port(3306)
                 .credentials(credentials)
                 .removalPolicy(RemovalPolicy.DESTROY)
@@ -171,8 +165,7 @@ class Runner : Runnable {
         vpc: Vpc,
         securityGroup: SecurityGroup,
         database: DatabaseInstance,
-        databasePassword: Secret,
-        subnetSelection: SubnetSelection
+        databasePassword: Secret
     ) : Stack(scope, Names.appStackId) {
         val bucketWithFilesForEc2 = createFilesForEc2Bucket()
         val ec2 = createEc2Instance(
@@ -180,12 +173,10 @@ class Runner : Runnable {
             securityGroup,
             bucketWithFilesForEc2,
             database,
-            databasePassword,
-            subnetSelection
+            databasePassword
         )
         val apiGateway = createApiGateway(ec2)
         val bucketWithFilesForWebsite = createWebsiteBucket(ec2)
-        val cloudFrontDistribution = createCloudfrontDistribution(bucketWithFilesForWebsite, apiGateway)
 
         private fun createFilesForEc2Bucket(): Bucket {
             val bucket = Bucket.Builder.create(this, Names.s3BucketNameForEc2Files)
@@ -206,8 +197,7 @@ class Runner : Runnable {
             securityGroup: SecurityGroup,
             bucket: Bucket,
             database: DatabaseInstance,
-            databasePassword: Secret,
-            subnetSelection: SubnetSelection
+            databasePassword: Secret
         ): Instance {
             val servicePrincipal = ServicePrincipal("ec2.amazonaws.com")
             val s3ReadOnlyAccess = ManagedPolicy.fromAwsManagedPolicyName("AmazonS3ReadOnlyAccess")
@@ -232,9 +222,13 @@ class Runner : Runnable {
             val copySystemdEntry = InitSource.fromS3Object("/etc/systemd/system", bucket, "systemd.zip")
             val launchServer = InitCommand.argvCommand(listOf("systemctl", "start", "condorcet-backend"))
             val lines = listOf(
-                "java -jar edit-json.jar configuration.json set string ${database.dbInstanceEndpointAddress} database host",
+                "java -jar edit-json.jar configuration.json set string ${database.dbInstanceEndpointAddress} database root host",
+                "java -jar edit-json.jar configuration.json set string ${database.dbInstanceEndpointAddress} database immutable host",
+                "java -jar edit-json.jar configuration.json set string ${database.dbInstanceEndpointAddress} database mutable host",
                 "DATABASE_PASSWORD=\$(aws secretsmanager get-secret-value --region us-west-1 --output text --query SecretString --secret-id ${databasePassword.secretName})",
-                "java -jar edit-json.jar secrets/secret-configuration.json set string \$DATABASE_PASSWORD database password"
+                "java -jar edit-json.jar secrets/secret-configuration.json set string \$DATABASE_PASSWORD database root password",
+                "java -jar edit-json.jar secrets/secret-configuration.json set string \$DATABASE_PASSWORD database immutable password",
+                "java -jar edit-json.jar secrets/secret-configuration.json set string \$DATABASE_PASSWORD database mutable password"
             )
             val content = lines.joinToString("\n", "", "\n")
             val initializeContent = InitFile.fromString("/home/ec2-user/initialize.sh", content, executable)
@@ -253,10 +247,13 @@ class Runner : Runnable {
             )
             val initConfig = InitConfig(configElements)
             val cloudFormationInit = CloudFormationInit.fromConfig(initConfig)
+            val publicSubnets = SubnetSelection.builder()
+                .subnetType(SubnetType.PUBLIC)
+                .build()
             val ec2 = Instance.Builder.create(this, Names.ec2InstanceId)
                 .securityGroup(securityGroup)
                 .vpc(vpc)
-                .vpcSubnets(subnetSelection)
+                .vpcSubnets(publicSubnets)
                 .role(role)
                 .instanceName(Names.ec2InstanceName)
                 .instanceType(computeInstanceType)
@@ -297,15 +294,24 @@ class Runner : Runnable {
                 .build()
             return bucket
         }
+    }
 
+    class CloudFrontStack(
+        scope: Construct,
+        staticSiteBucket: Bucket,
+        api: IApi
+    ) : Stack(scope, Names.cloudFrontStackId) {
+        val distribution = createCloudfrontDistribution(staticSiteBucket, api)
         private fun createCloudfrontDistribution(
             staticSiteBucket: Bucket,
             api: IApi
         ): Distribution {
             val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
+            val httpOrigin = HttpOrigin.Builder.create(api.apiEndpoint).build()
+            val originGroup = OriginGroup.Builder.create().primaryOrigin(staticSiteOrigin).fallbackOrigin(httpOrigin).build()
             val staticSiteBehavior = BehaviorOptions.builder()
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .origin(staticSiteOrigin)
+                .origin(originGroup)
                 .build()
             val distribution = Distribution.Builder.create(this, Names.distributionName)
                 .defaultBehavior(staticSiteBehavior)
@@ -320,7 +326,6 @@ class Runner : Runnable {
         val vpcStack = VpcStack(app)
         val databaseStack = DatabaseStack(
             app,
-            publicSubnets,
             vpcStack.vpc,
             vpcStack.securityGroup,
             vpcStack.databasePassword
@@ -330,8 +335,12 @@ class Runner : Runnable {
             vpcStack.vpc,
             vpcStack.securityGroup,
             databaseStack.database,
-            vpcStack.databasePassword,
-            publicSubnets
+            vpcStack.databasePassword
+        )
+        val cloudFrontStack = CloudFrontStack(
+            app,
+            applicationStack.bucketWithFilesForWebsite,
+            applicationStack.apiGateway
         )
         app.synth()
     }
