@@ -77,11 +77,6 @@ class Runner : Runnable {
                 .build()
             securityGroup.addIngressRule(
                 Peer.anyIpv4(),
-                Port.tcp(22),
-                "Allow SSH from anywhere"
-            )
-            securityGroup.addIngressRule(
-                Peer.anyIpv4(),
                 Port.tcp(80),
                 "Allow HTTP from anywhere"
             )
