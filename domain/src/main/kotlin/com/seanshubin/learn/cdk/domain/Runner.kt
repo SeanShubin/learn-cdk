@@ -4,11 +4,8 @@ import software.amazon.awscdk.*
 import software.amazon.awscdk.services.apigatewayv2.alpha.AddRoutesOptions
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpApi
 import software.amazon.awscdk.services.apigatewayv2.alpha.HttpMethod
-import software.amazon.awscdk.services.apigatewayv2.alpha.IApi
 import software.amazon.awscdk.services.apigatewayv2.integrations.alpha.HttpUrlIntegration
 import software.amazon.awscdk.services.cloudfront.*
-import software.amazon.awscdk.services.cloudfront.origins.HttpOrigin
-import software.amazon.awscdk.services.cloudfront.origins.OriginGroup
 import software.amazon.awscdk.services.cloudfront.origins.S3Origin
 import software.amazon.awscdk.services.ec2.*
 import software.amazon.awscdk.services.iam.ManagedPolicy
@@ -30,7 +27,6 @@ class Runner : Runnable {
         const val vpcStackId = "${prefix}VpcStack"
         const val databaseStackId = "${prefix}DatabaseStack"
         const val appStackId = "${prefix}AppStack"
-        const val currentExperimentStackId = "${prefix}CurrentExperimentStack"
         const val vpcId = "${prefix}Vpc"
         const val securityGroupId = "${prefix}SecurityGroup"
         const val ec2InstanceId = "${prefix}Ec2Id"
@@ -49,8 +45,6 @@ class Runner : Runnable {
         const val urlIntegration = "${prefix}UrlIntegration"
         const val distributionName = "${prefix}Distribution"
         const val databasePassword = "${prefix}DatabasePassword"
-        const val hostedZoneName = "${prefix}HostedZone"
-        const val domainName = "pairwisevote.com"
     }
 
     class VpcStack(scope: Construct) : Stack(scope, Names.vpcStackId) {
@@ -79,7 +73,6 @@ class Runner : Runnable {
 
         private fun createSecurityGroup(vpc: Vpc): SecurityGroup {
             val securityGroup = SecurityGroup.Builder.create(this, Names.securityGroupId)
-                .allowAllOutbound(true)
                 .vpc(vpc)
                 .build()
             securityGroup.addIngressRule(
@@ -176,8 +169,9 @@ class Runner : Runnable {
             database,
             databasePassword
         )
-        val apiGateway = createApiGateway(ec2)
+        val api = createApi(ec2)
         val bucketWithFilesForWebsite = createWebsiteBucket(ec2)
+        val distribution = createCloudfrontDistribution(bucketWithFilesForWebsite, api)
 
         private fun createFilesForEc2Bucket(): Bucket {
             val bucket = Bucket.Builder.create(this, Names.s3BucketNameForEc2Files)
@@ -265,7 +259,7 @@ class Runner : Runnable {
             return ec2
         }
 
-        private fun createApiGateway(ec2: Instance): HttpApi {
+        private fun createApi(ec2: Instance): HttpApi {
             val httpApi = HttpApi.Builder.create(this, Names.apiName).build()
             val instancePublicIp = ec2.instancePublicIp
             val url = "http://$instancePublicIp:8080/{proxy}"
@@ -294,34 +288,18 @@ class Runner : Runnable {
                 .build()
             return bucket
         }
-    }
 
-    class CurrentExperimentStack(
-        scope: Construct,
-        staticSiteBucket: Bucket,
-        api: HttpApi
-    ) : Stack(scope, Names.currentExperimentStackId) {
-        val distribution = createCloudfrontDistribution(staticSiteBucket, api)
         private fun createCloudfrontDistribution(
             staticSiteBucket: Bucket,
             api: HttpApi
         ): Distribution {
             val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
-//            val httpOrigin = HttpOrigin
-//                .Builder
-//                .create(api.httpApiId)
-//                .build()
-//            val httpBehavior = BehaviorOptions.builder().origin(httpOrigin).build()
-//            val additionalBehaviors = mapOf(
-//                "/proxy/*" to httpBehavior
-//            )
             val staticSiteBehavior = BehaviorOptions.builder()
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .origin(staticSiteOrigin)
                 .build()
             val distribution = Distribution.Builder.create(this, Names.distributionName)
                 .defaultBehavior(staticSiteBehavior)
-//                .additionalBehaviors(additionalBehaviors)
                 .defaultRootObject("index.html")
                 .build()
             return distribution
@@ -343,11 +321,6 @@ class Runner : Runnable {
             vpcStack.securityGroup,
             databaseStack.database,
             vpcStack.databasePassword
-        )
-        val cloudFrontStack = CurrentExperimentStack(
-            app,
-            applicationStack.bucketWithFilesForWebsite,
-            applicationStack.apiGateway
         )
         app.synth()
     }

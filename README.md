@@ -1,5 +1,18 @@
 # Learn CDK
 
+## Steps to deploy
+
+### Automated Portion
+- `./build-deploy.sh`
+
+### Manual Portion (one time)
+- Add a keypair
+
+### Manual Portion (every time)
+
+## Testing the deployment
+- Navigate to CloudFront, Distribution Deploy Name 
+
 ## Adding a keypair
 - Amazon Management Console
 - EC2
@@ -10,38 +23,6 @@
 - move to ./secrets/
 - `chmod 400 secrets/LearnCdkKeyName.pem`
 - `ssh -i "secrets/LearnCdkKeyName.pem" ec2-user@ec2-13-56-12-27.us-west-1.compute.amazonaws.com`
-
-## Uploading files to EC2 from CDK
-- Get the files from your local storage to an s3 bucket via BucketDeployment using Source.asset
-- Get the files from your s3 bucket to your ec2 instance via CloudFormationInit using InitSource.fromS3Object 
-- Source.asset will treat any file you specify as a .zip file and explode it during upload,
-  so if you want to specify a single file, put it in its own directory or its own zip file
-- InitSource.fromS3Object will treat the data at the specified key as a zip file,
-  so be sure anything you want to treat as a single file is in its own directory or in its own zip file
-- This can be particularly confusing when deploying java archive's as they will be exploded onto your ec2 instance if you did not put them in their own directory or zip file
-
-## EC2 Commands
-- scp -i secrets/LearnCdkKeyName.pem ../condorcet-backend/console/target/condorcet-backend-console.jar ec2-user@ec2-3-101-80-18.us-west-1.compute.amazonaws.com:
-- sudo yum -y install java-17-amazon-corretto
-- java -jar condorcet-backend-console.jar
-
-
-- sudo yum -y install git
-- sudo yum -y install java-17-amazon-corretto-headless
-- cd /tmp
-- sudo wget https://dlcdn.apache.org/maven/maven-3/3.8.4/binaries/apache-maven-3.8.4-bin.tar.gz
-- sudo tar xf /tmp/apache-maven-*.tar.gz -C /opt
-- sudo ln -s /opt/apache-maven-3.8.4 /opt/maven
-sudo nano /etc/profile.d/maven.sh
-/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.261.x86_64
-
-export JAVA_HOME=/usr/lib/jvm/java-1.7.0-openjdk-1.7.0.261.x86_64
-export M2_HOME=/opt/maven
-export MAVEN_HOME=/opt/maven
-export PATH=${M2_HOME}/bin:${PATH}
-
-sudo chmod +x /etc/profile.d/maven.sh
-source /etc/profile.d/maven.sh
 
 ## Scripts
 - `./scripts/build.sh` takes about 15 seconds

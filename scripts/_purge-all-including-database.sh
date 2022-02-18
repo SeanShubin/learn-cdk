@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-cdk destroy --force SeanLearnCdkVpcStack SeanLearnCdkDatabaseStack SeanLearnCdkAppStack SeanLearnCdkCurrentExperimentStack
+cdk destroy --force SeanLearnCdkVpcStack SeanLearnCdkDatabaseStack SeanLearnCdkAppStack
