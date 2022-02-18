@@ -26,11 +26,11 @@ import software.constructs.Construct
 
 class Runner : Runnable {
     object Names {
-        private const val prefix = "LearnCdk"
+        private const val prefix = "SeanLearnCdk"
         const val vpcStackId = "${prefix}VpcStack"
         const val databaseStackId = "${prefix}DatabaseStack"
         const val appStackId = "${prefix}AppStack"
-        const val cloudFrontStackId = "${prefix}CloudFrontStack"
+        const val currentExperimentStackId = "${prefix}CurrentExperimentStack"
         const val vpcId = "${prefix}Vpc"
         const val securityGroupId = "${prefix}SecurityGroup"
         const val ec2InstanceId = "${prefix}Ec2Id"
@@ -48,6 +48,7 @@ class Runner : Runnable {
         const val apiName = "${prefix}Api"
         const val urlIntegration = "${prefix}UrlIntegration"
         const val distributionName = "${prefix}Distribution"
+        const val databasePassword = "${prefix}DatabasePassword"
         const val hostedZoneName = "${prefix}HostedZone"
         const val domainName = "pairwisevote.com"
     }
@@ -113,7 +114,7 @@ class Runner : Runnable {
             val secretStringGenerator = SecretStringGenerator.builder()
                 .excludePunctuation(true)
                 .build()
-            val databasePassword = Secret.Builder.create(this, "databasePassword")
+            val databasePassword = Secret.Builder.create(this, Names.databasePassword)
                 .generateSecretString(secretStringGenerator)
                 .build()
             return databasePassword
@@ -264,7 +265,7 @@ class Runner : Runnable {
             return ec2
         }
 
-        private fun createApiGateway(ec2: Instance): IApi {
+        private fun createApiGateway(ec2: Instance): HttpApi {
             val httpApi = HttpApi.Builder.create(this, Names.apiName).build()
             val instancePublicIp = ec2.instancePublicIp
             val url = "http://$instancePublicIp:8080/{proxy}"
@@ -284,7 +285,6 @@ class Runner : Runnable {
             val bucket = Bucket.Builder.create(this, Names.s3BucketNameForWebsite)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .autoDeleteObjects(true)
-                .publicReadAccess(true)
                 .build()
             val s3Files = Source.asset("generated/s3/website")
             val deploySources = listOf(s3Files)
@@ -296,25 +296,32 @@ class Runner : Runnable {
         }
     }
 
-    class CloudFrontStack(
+    class CurrentExperimentStack(
         scope: Construct,
         staticSiteBucket: Bucket,
-        api: IApi
-    ) : Stack(scope, Names.cloudFrontStackId) {
+        api: HttpApi
+    ) : Stack(scope, Names.currentExperimentStackId) {
         val distribution = createCloudfrontDistribution(staticSiteBucket, api)
         private fun createCloudfrontDistribution(
             staticSiteBucket: Bucket,
-            api: IApi
+            api: HttpApi
         ): Distribution {
             val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
-            val httpOrigin = HttpOrigin.Builder.create(api.apiEndpoint).build()
-            val originGroup = OriginGroup.Builder.create().primaryOrigin(staticSiteOrigin).fallbackOrigin(httpOrigin).build()
+//            val httpOrigin = HttpOrigin
+//                .Builder
+//                .create(api.httpApiId)
+//                .build()
+//            val httpBehavior = BehaviorOptions.builder().origin(httpOrigin).build()
+//            val additionalBehaviors = mapOf(
+//                "/proxy/*" to httpBehavior
+//            )
             val staticSiteBehavior = BehaviorOptions.builder()
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .origin(originGroup)
+                .origin(staticSiteOrigin)
                 .build()
             val distribution = Distribution.Builder.create(this, Names.distributionName)
                 .defaultBehavior(staticSiteBehavior)
+//                .additionalBehaviors(additionalBehaviors)
                 .defaultRootObject("index.html")
                 .build()
             return distribution
@@ -337,7 +344,7 @@ class Runner : Runnable {
             databaseStack.database,
             vpcStack.databasePassword
         )
-        val cloudFrontStack = CloudFrontStack(
+        val cloudFrontStack = CurrentExperimentStack(
             app,
             applicationStack.bucketWithFilesForWebsite,
             applicationStack.apiGateway

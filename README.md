@@ -112,64 +112,74 @@ source /etc/profile.d/maven.sh
 - vote.cj.com
 
 
+## Debugging
 
-I see how to create the HttpOrigin, but not how to add it to the distribution like it was done in the AWS Management Console.   If you look at this example code (Kotlin using the Java API), you can see me creating the HttpOrigin just fine, but there does not appear to be a method on Distribution that allows an additional origin to be added.
+Here is my latest experiment, it looks like I can't get the domain name from the 
+software.amazon.awscdk.services.apigatewayv2.alpha.HttpApi.
+I have tried apiId, apiEndpoint, url, httpApiName, and httpApiId.
+What I really need is somethingl like a "getDomain()" method, or way to get the same thing.  I tried writing code to strip the colon from the url, but that doesn't work because when the code is run, url is just an unreified token.
+Code and results below:
 
-import software.amazon.awscdk.services.apigatewayv2.alpha.IApi
-import software.amazon.awscdk.services.s3.Bucket
-import software.amazon.awscdk.services.cloudfront.Distribution
+---
 
-      private fun createCloudfrontDistribution(
-            staticSiteBucket: Bucket,
-            api: IApi
-        ): Distribution {
-            val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
-            val staticSiteBehavior = BehaviorOptions.builder()
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .origin(staticSiteOrigin)
-                .build()
-            val httpOrigin = HttpOrigin.Builder.create(api.apiEndpoint).build()
-            val distribution = Distribution.Builder.create(this, Names.distributionName)
-                .defaultBehavior(staticSiteBehavior)
-                .defaultRootObject("index.html")
-                .build()
-            return distribution
-        }
+class CurrentExperimentStack(
+    scope: Construct,
+    staticSiteBucket: Bucket,
+    api: HttpApi
+) : Stack(scope, Names.currentExperimentStackId) {
+    val distribution = createCloudfrontDistribution(staticSiteBucket, api)
+    private fun createCloudfrontDistribution(
+        staticSiteBucket: Bucket,
+        api: HttpApi
+    ): Distribution {
+        val staticSiteOrigin = S3Origin.Builder.create(staticSiteBucket).build()
+        val httpOrigin = HttpOrigin
+            .Builder
+            .create(api.apiEndpoint)
+            .build()
+        val httpBehavior = BehaviorOptions.builder().origin(httpOrigin).build()
+        val additionalBehaviors = mapOf(
+            "/proxy/*" to httpBehavior
+        )
+        val staticSiteBehavior = BehaviorOptions.builder()
+            .allowedMethods(AllowedMethods.ALLOW_ALL)
+            .origin(staticSiteOrigin)
+            .build()
+        val distribution = Distribution.Builder.create(this, Names.distributionName)
+            .defaultBehavior(staticSiteBehavior)
+            .additionalBehaviors(additionalBehaviors)
+            .defaultRootObject("index.html")
+            .build()
+        return distribution
+    }
+}
 
-This was done in cloudfront like this:
-- Cloudfront
-- Distributions
-- Origins
-- Create Origin
-- Origin Domain
-  - yggj9m1nhh.execute-api.us-west-1.amazonaws.com
-- HTTPS only
-- Create Origin
+---
 
-so I was expecting something like Distribution.addOrigin or Distribution.createOrigin
+HttpOrigin.Builder.create(api.apiId).build()
 
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>aws-cdk-lib</artifactId>
-                <version>2.12.0</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>apigatewayv2-alpha</artifactId>
-                <version>2.12.0-alpha.0</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>apigatewayv2-integrations</artifactId>
-                <version>1.144.0</version>
-            </dependency>
-            <dependency>
-                <groupId>software.amazon.awscdk</groupId>
-                <artifactId>apigatewayv2-integrations-alpha</artifactId>
-                <version>2.10.0-alpha.0</version>
-            </dependency>
-            <dependency>
-                <groupId>software.constructs</groupId>
-                <artifactId>constructs</artifactId>
-                <version>10.0.62</version>
-            </dependency>
+Resource handler returned message: "Invalid request provided: The parameter origin name must be a domain name. (Service: CloudFront, Status Code: 400, Request ID: 2185b715-d7c0-4389-a68a-e0e712fb3d26, Extended Request ID: null)" (RequestToken: a9253d4f-3900-25f8-913e-ad670cfefa9b, HandlerErrorCode: InvalidRequest)
+
+---
+
+HttpOrigin.Builder.create(api.apiEndpoint).build()
+
+Resource handler returned message: "Invalid request provided: The parameter origin name cannot contain a colon. (Service: CloudFront, Status Code: 400, Request ID: cb390c36-25f0-4bde-8e72-4a1d3c2a8b94, Extended Request ID: null)" (RequestToken: 1bc91dca-9d27-7db5-7080-c771e921ee0d, HandlerErrorCode: InvalidRequest)
+
+---
+
+HttpOrigin.Builder.create(api.url).build()
+
+Resource handler returned message: "Invalid request provided: The parameter origin name cannot contain a colon. (Service: CloudFront, Status Code: 400, Request ID: 09e2fbe0-276a-438b-95ff-438dc64ea695, Extended Request ID: null)" (RequestToken: 8ced849c-c358-8cfa-d73d-e9a8cdbc024e, HandlerErrorCode: InvalidRequest)
+
+---
+
+HttpOrigin.Builder.create(api.httpApiName).build()
+
+Resource handler returned message: "Invalid request provided: The parameter origin name must be a domain name. (Service: CloudFront, Status Code: 400, Request ID: cb937d14-bd00-40cd-b974-2f77d14cd873, Extended Request ID: null)" (RequestToken: 521569d0-7d4a-c445-365d-71b59587fcab, HandlerErrorCode: InvalidRequest)
+
+---
+
+HttpOrigin.Builder.create(api.httpApiId).build()
+
+Resource handler returned message: "Invalid request provided: The parameter origin name must be a domain name. (Service: CloudFront, Status Code: 400, Request ID: c54eef0c-115d-426a-a941-78309c1c412d, Extended Request ID: null)" (RequestToken: 9e3774a4-99c0-5582-0733-e987ee900792, HandlerErrorCode: InvalidRequest)
