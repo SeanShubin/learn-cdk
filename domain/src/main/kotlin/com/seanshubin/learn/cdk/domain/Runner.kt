@@ -77,11 +77,6 @@ class Runner : Runnable {
                 .build()
             securityGroup.addIngressRule(
                 Peer.anyIpv4(),
-                Port.tcp(80),
-                "Allow HTTP from anywhere"
-            )
-            securityGroup.addIngressRule(
-                Peer.anyIpv4(),
                 Port.tcp(8080),
                 "Allow HTTP debug from anywhere"
             )
@@ -293,8 +288,15 @@ class Runner : Runnable {
                 .allowedMethods(AllowedMethods.ALLOW_ALL)
                 .origin(staticSiteOrigin)
                 .build()
+            val errorResponse = ErrorResponse
+                .builder()
+                .responseHttpStatus(403)
+                .responsePagePath("/index.html")
+                .build()
+            val errorResponses = listOf(errorResponse)
             val distribution = Distribution.Builder.create(this, Names.distributionName)
                 .defaultBehavior(staticSiteBehavior)
+                .errorResponses(errorResponses)
                 .defaultRootObject("index.html")
                 .build()
             return distribution
