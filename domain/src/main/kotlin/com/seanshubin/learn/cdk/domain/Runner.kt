@@ -82,11 +82,6 @@ class Runner : Runnable {
             )
             securityGroup.addIngressRule(
                 Peer.anyIpv4(),
-                Port.tcp(443),
-                "Allow HTTPS from anywhere"
-            )
-            securityGroup.addIngressRule(
-                Peer.anyIpv4(),
                 Port.tcp(3306),
                 "Allow MYSQL from anywhere"
             )
@@ -290,7 +285,8 @@ class Runner : Runnable {
                 .build()
             val errorResponse = ErrorResponse
                 .builder()
-                .responseHttpStatus(403)
+                .httpStatus(403)
+                .responseHttpStatus(200)
                 .responsePagePath("/index.html")
                 .build()
             val errorResponses = listOf(errorResponse)
