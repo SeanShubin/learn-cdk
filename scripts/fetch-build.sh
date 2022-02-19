@@ -2,6 +2,7 @@
 
 set -e
 
+./scripts/_fetch.sh
 ./scripts/_build.sh
 
-say done with build
+say done with fetch build

@@ -2,7 +2,8 @@
 
 set -e
 
+./scripts/_fetch.sh
 ./scripts/_build.sh
 ./scripts/_deploy.sh
 
-say done with build deploy
+say done with fetch build deploy
