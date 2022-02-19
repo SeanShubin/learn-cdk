@@ -122,7 +122,6 @@ class Runner : Runnable {
                 .build()
             val database = DatabaseInstance.Builder.create(this, Names.databaseInstanceId)
                 .databaseName(Names.databaseName)
-                .publiclyAccessible(true)
                 .engine(DatabaseInstanceEngine.MYSQL)
                 .credentials(Credentials.fromGeneratedSecret("root"))
                 .vpc(vpc)
